@@ -1,0 +1,67 @@
+import numpy as np # 행렬연산
+import matplotlib.pyplot as plt # 시각화
+
+import torch # 파이토치
+import torch.nn as nn # 파이토치 모듈
+import torch.nn.init as init # 초기화 관련 모듈 
+import torch.optim as optim #최적화함수
+from torch.utils.data import DataLoader # 데이터셋을 학습에 용이하게 바꿈
+import torch.nn.functional as F # 자주 쓰는 함수를 F로 따로 가져옴
+
+import torchvision # 이미지 처리하는 파이토치
+from torchvision import transforms, datasets # 여기에 MNIST dataset 있음
+
+batch_size = 256
+learning_rate = 0.001
+num_epoch = 10
+
+train_dataset = datasets.MNIST(
+	"./", # 경로 지정 - 현재 코드가 위치한 경로로
+	train=True, # train set이니까 True
+	transform=transforms.ToTensor(), # 이미지 데이터를 텐서 형태로 변환해줌. 각 픽셀을 0~1 사이로 regularization
+	target_transform=None, # label에 대해 변형
+	download=True
+)
+
+test_dataset = datasets.MNIST(
+    root="./",
+    train=False, # test set이니까 False
+    download=True,
+    transform=transforms.ToTensor() 
+)
+train_loader = torch.utils.data.DataLoader(
+    dataset=train_dataset,
+    batch_size=batch_size,
+    shuffle=True
+)
+test_loader = torch.utils.data.DataLoader(
+    dataset=test_dataset,
+    batch_size=batch_size,
+    shuffle=False
+)
+
+class CNN(nn.Module):
+	def __init__(self):
+		super(CNN,self).__init__()
+		self.layer = nn.Sequential(
+			nn.Conv2d(1,8,4), # in_channels, out_channels, kernel_size
+			nn.ReLU(),
+			nn.Conv2d(8,20,4),
+			nn.ReLU(),
+			nn.MaxPool2d(2,2),
+			nn.Conv2d(20,80,4),
+			nn.ReLU(),
+			nn.MaxPool2d(2,2),
+		)
+		
+		self.fc_layer = nn.Sequential(
+			nn.Linear(80*4*4, 100),
+			nn.ReLU(),
+			nn.Linear(100, 10),
+		)
+		
+	def forward(self,x):
+		out = self.layer(x)
+		out = out.view(batch_size, -1)
+		out = self.fc_layer(out)
+		return out
